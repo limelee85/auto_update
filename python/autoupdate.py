@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup as bs
 from time import sleep
 import datetime
 import json
+import re
 
 path_public = os.getenv('PATH_PUBLIC')
 version_path = os.getenv('PATH_VERSION')
@@ -47,8 +48,6 @@ def json_parse(url):
 	v = requests.get(URL)
 	#print(json.loads(v.text)['ResultSet']['Results'][0]['builds'][0]['ProductId'])
 	return(json.loads(v.text))
-	
-
 
 def burp_update(url,select):
 	burp_parse = json_parse(url)
@@ -84,6 +83,17 @@ def burp_update(url,select):
 		return ['https://portswigger-cdn.net/burp/releases/download?product='+select+'&version='+burp_version+'&type=WindowsX64','burpsuite_'+select+'_windows-x64_v'+'_'.join(burp_version.split('.'))+'.exe']
 	'''
 
+# github download 20230731
+def github_update(url,select):
+	git_parse = json_parse(url)
+	regex = re.compile(select)
+	for i in git_parse['assets']:
+		try :
+			regex.match(i['name']).start() 
+			return [i['browser_download_url'],i['name']]
+		except AttributeError :
+			continue
+
 def update(name,url,select,version_file,sub_path) :
 
 	try: 
@@ -97,7 +107,13 @@ def update(name,url,select,version_file,sub_path) :
 			parse = parse.find('a')['href']+'#'+parse.text.split(',')[0].split(':')[1].strip()
 			version = parse.split('/')[-1]
 			prev_version = prev_version_parse(version_file)
-		elif (name != 'Burp Suite Pro') :
+		elif (name.find("github") != -1) :
+			# github download 20230731
+			temp_result = github_update(url,select)
+			parse = temp_result[0]
+			version = temp_result[1]
+			prev_version = prev_version_parse(version_file)
+		else :
 			parse = parser(url,select)[0]['href']
 			version = parse.split('/')[-1]
 			prev_version = prev_version_parse(version_file)
@@ -128,15 +144,16 @@ update('Burp Suite Community','https://portswigger.net/burp/releases/data?pageSi
 update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','')
 update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','')
 update('WireShark','https://www.wireshark.org/download.html','#download-accordion > div:nth-child(1) > details > div > ul > li:nth-child(1) > a','wireshark_version','Network/')
-update('Apktool','https://ibotpeaches.github.io/Apktool/install/','#navbar > ul > li:nth-child(7) > a','apktool_version','Mobile/')
+#update('Apktool','https://ibotpeaches.github.io/Apktool/install/','#navbar > ul > li:nth-child(7) > a','apktool_version','Mobile/')
+update('github_Apktool','https://api.github.com/repos/iBotPeaches/Apktool/releases/latest','apktool_[0-9.]+','apktool_version','Mobile/')
 update('Nmap','https://nmap.org/download','b > a','nmap_version','Network/')
 update('Bitvise SSH Client','https://www.bitvise.com/ssh-client-download','#content > div','bitvise_version','')
 update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','')
 update('ADB', 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip','a','adb_version','Mobile/')
+update('github_jadx','https://api.github.com/repos/skylot/jadx/releases/latest','jadx-gui-[0-9.]+-with-jre-win','jadx_version','Mobile/')
 
 print('#############################################')
 print('#                 Update End                #')
 print('#############################################')
 
-# jadx curl -s https://api.github.com/repos/skylot/jadx/releases/latest | grep "browser_download_url.*with-jre.*zip" | cut -d : -f 2,3 | tr -d \" | wget -i -
 # frida server curl -s https://api.github.com/repos/frida/frida/releases/latest | grep "browser_download_url.*server.*android.*"
