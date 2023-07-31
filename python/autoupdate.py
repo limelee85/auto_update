@@ -12,16 +12,19 @@ version_path = os.getenv('PATH_VERSION')
 
 def file_path_delete(prev_version,sub_path):
 
-	check_str = ['-r ', '-rf ', '-f ', '..', '../', '\.\.', '\..', '.\.' , '*']
-	warn = 0
-	for i in check_str:
-		if (prev_version.find(i) != -1 ):
-			warn = 1
+	check_str = ['-r ', '-rf ', '-f ', '..', '../', '\.\.', '\..', '.\.' , '*', '/bin', '/boot', '/dev', '/etc', '/home', '/root', '/usr', '/sys', '/var']
+	warn = [s for s in check_str if s in prev_version]
 
-	if (warn == 1) :
+	#warn = 0
+	#for i in check_str:
+	#	if (prev_version.find(i) != -1 ):
+	#		warn = 1
+
+	if (len(warn) > 0) :
 		print('## Find Dangerous String ['+prev_version+'] : Skip Remove File')
 	else : 
-		os.system('rm "'+path_public+sub_path+prev_version+'"')
+		#os.system('rm "'+path_public+sub_path+prev_version+'"')
+		os.remove(path_public+sub_path+prev_version)
 
 
 def prev_version_parse(path):
