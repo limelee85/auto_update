@@ -10,5 +10,6 @@
 ## php
 - enc.php
   1. base64, url, hex en/decoding 지원
-  2. hash 지원 
-  3. charset 지정 가능
+  2. hash 지원
+  3. en/decryption 지원
+  4. charset 지정 가능
