@@ -1,0 +1,245 @@
+<html>
+<head>
+<style>
+	form {  margin-block-end: 0em; }
+	#box {  display: table;  }
+	.options { float: left; margin-block-start: 0.5em; margin-block-end: 0.5em; margin-left: 0.5em;}
+	.options_r { float: right; margin-block-start: 0.5em; margin-block-end: 0.5em; margin-right: 0.5em;}
+
+	.half { width:440px; height:200px; float: left;}
+	.overflow { height: 110px; }
+</style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+<link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+<script>
+
+	// Init
+	let selcode=0;
+	$( function() {
+	    $( "#code" ).selectmenu({
+	    	change: function( event, data ) {
+	    		change_code(data.item.value);
+	       }
+	     })
+	    .selectmenu( "option", "width", "auto" );
+	 
+	    $( "#mode" ).selectmenu({
+	    	change: function( event, data ) {
+	    		test1(selcode);
+	       }
+	     })
+	    .selectmenu( "option", "width", "auto" )
+	    .selectmenu("menuWidget")
+	    .addClass("overflow");
+	 
+	    $( "#charset" ).selectmenu({
+	    	change: function( event, data ) {
+	    		test1(selcode);
+	       }
+	     })
+	    .selectmenu( "option", "width", "auto" )
+	      .selectmenu( "menuWidget" )
+	      .addClass( "overflow" );
+	 
+	    $('#hashing').css('display', 'none');
+	    change_code("0");
+  } );
+
+
+	// Code Event
+	// 0 en/decode 1 hashing 2 en/decryption
+	function change_code(code) {
+
+		// input/ output display event
+		$('#endecode').css('display', 'none');
+		$('#hashing').css('display', 'none');
+		$('#endecrypt').css('display', 'none');
+		$('#translator').css('display', 'none');
+		$("select[name='mode'] option").remove();
+
+		// setting data
+		switch(code) {
+			case "0":
+				selcode = 0;
+				$('#endecode').css('display', 'block');
+				option_data = {"자주 쓰는 메뉴":{"url":"URL","b64":"Base64","hex":"Hex"},"전체 메뉴":{}}
+				break
+			case "1":
+				selcode = 2;
+				$('#hashing').css('display', 'block');
+				option_data = {"자주 쓰는 메뉴":{"md5":"md5","sha256":"sha256","sha512":"sha512"},"전체 메뉴":{"md2":"md2","md4":"md4","sha1":"sha1","sha224":"sha224","sha384":"sha384","sha512/224":"sha512/224","sha3-224":"sha3-224","sha512/256":"sha512/256","sha3-256":"sha3-256","sha3-384":"sha3-384","sha3-512":"sha3-512","ripemd128":"ripemd128","ripemd160":"ripemd160","ripemd256":"ripemd256","ripemd320":"ripemd320","whirlpool":"whirlpool","tiger128,3":"tiger128,3","tiger160,3":"tiger160,3","tiger192,3":"tiger192,3","haval224,3":"haval224,3","haval128,5":"haval128,5","haval160,5":"haval160,5","haval192,5":"haval192,5","haval224,5":"haval224,5","haval256,5":"haval256,5"}}
+				break	
+			case "2":
+				selcode = 3;
+				$('#endecrypt').css('display', 'block');
+				option_data = {"AES":{"aes-128-cbc":"AES-128-CBC","aes-256-cbc":"AES-256-CBC"}};
+				break
+			//case "3":
+			//	selcode = 4;
+			//	$('#translator').css('display', 'block');
+			//	option_data = "";
+			//	break
+		}
+
+		// change mode option event
+		let option_text = "";
+		for (const i in option_data ) {
+			option_text += `<optgroup label="${i}">`;
+			const property = option_data[i];
+			for (const j in property) {
+				option_text += `<option value="${j}">${property[j]}</option>`;
+			}
+			option_text += "</optgroup>";
+		}
+
+		$("#mode").append(option_text);
+		$( "#mode" ).selectmenu("refresh");
+	}
+
+
+
+	function getresult(formData) {
+		let temp;
+		//console.log(formData);
+		$.ajax({
+			url:"/enc.php",
+			type:"POST",
+			data:encodeURI(formData),
+			async: false,
+			success:function(data) {
+				temp = data;
+			},
+			error: function(xhr,status) {
+				console.log(xhr + ":" + status);
+			}
+		});
+
+		return temp;
+	}
+
+	function test1(code) {
+
+		let val;
+		switch(code) {
+			case 0:
+				val = $("#Encode").val();
+				break
+			case 1:
+				val = $("#Decode").val();
+				break
+			case 2:
+				val = $("#Plain").val();
+				break
+			case 3:
+				val = $("#Text").val();
+				break
+			case 4:
+				val = encodeURIComponent($("#Encrypted").val());
+				break
+		}
+		const formData = $("#test").serialize()+"&code="+code+"&data="+val;
+		const result = getresult(formData);
+		switch(code) {
+			case 0:
+				$("#Decode").val(result);
+				break
+			case 1:
+				$("#Encode").val(result);
+				break
+			case 2:
+				$("#Hash").val(result);
+				break
+			case 3:
+				val = $("#Encrypted").val(result);
+				break
+			case 4:
+				val = $("#Text").val(result);
+				break
+		}
+
+
+	}
+
+	function swap() {
+		switch(selcode) {
+			case 0:
+				$("#Encode").val($("#Decode").val());
+				test1(selcode);
+				break
+			case 2:
+				$("#Plain").val($("#Hash").val());
+				test1(selcode);
+				break
+			case 3:
+				$("#Text").val($("#Encrypted").val());
+				test1(selcode)
+				break
+		}
+	}
+
+</script>
+
+
+</head>
+<body>
+<div id=box>
+<fieldset id=endecode>
+	<legend>EN/DEcoder</legend>
+	<textarea id="Encode" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(0); ></textarea>
+	<textarea id="Decode" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(1);></textarea>
+</fieldset>
+<fieldset id=hashing>
+	<legend>Hash Generator</legend>
+	<textarea id="Plain" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(2); ></textarea>
+	<textarea id="Hash" class="ui-widget ui-state-default ui-corner-all half" ></textarea>
+</fieldset>
+<fieldset id=endecrypt>
+	<legend>EN/DEcrypt</legend>
+	<textarea id="Text" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(3); ></textarea>
+	<textarea id="Encrypted" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(4);></textarea>
+</fieldset>
+<!--
+<fieldset id=translator>
+	<legend>Translator</legend>
+	<textarea id="Plain" class="ui-widget ui-state-default ui-corner-all half" ></textarea>
+	<textarea id="Hash" class="ui-widget ui-state-default ui-corner-all half" ></textarea>
+</fieldset> -->
+
+  <fieldset>
+  	<legend>Choose Options</legend>
+  	<div class="options">
+    <label for="code">Type</label>
+    <select name="code" id="code">
+      <option selected="selected" value="0">En/Decode</option>
+      <option value="1">Hash</option>
+      <option value="2">En/Decrypt</option>
+      <!-- <option value="3">Translator</option> -->
+    </select>
+  </div>
+ <form id="test" name="test" method="post"> 
+ 		<div class="options">
+    <label for="mode">mode</label>
+    <select name="mode" id="mode">
+    	
+    </select>
+ 		</div>
+ 		<div class="options">
+    <label for="number">charset</label>
+    <select name="charset" id="charset">
+      <option selected="selected">utf-8</option>
+      <option>euc-kr</option>
+      <option>ASCII</option>
+      <option>ISO-8859-1</option>
+      <option>utf-7</option>
+      <option>utf-16</option>
+      <option>utf-32</option>
+      <option>euc-jp</option>
+    </select>
+  </div>
+ </form>
+ <input id="swap" class="ui-button ui-corner-all ui-widget options_r" type="button" value="send output to input" onclick=swap(); />
+</fieldset>
+</div>
+</body>
+</html>
