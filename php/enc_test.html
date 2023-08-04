@@ -6,8 +6,13 @@
 	.options { float: left; margin-block-start: 0.5em; margin-block-end: 0.5em; margin-left: 0.5em;}
 	.options_r { float: right; margin-block-start: 0.5em; margin-block-end: 0.5em; margin-right: 0.5em;}
 
-	.half { width:440px; height:200px; float: left;}
-	.overflow { height: 110px; }
+	.half { width:440px; height:300px; float: left; display: table;}
+	.overflow { height: auto; max-height: 150px; }
+	.w100 {width : 100%; }
+	.h100 {height : 100%;}
+	.hauto {height : 15%;}
+	.h85 {height:85%;}
+	
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
@@ -15,8 +20,11 @@
 <script>
 
 	// Init
+
 	let selcode=0;
 	$( function() {
+
+			// create selectmenu 
 	    $( "#code" ).selectmenu({
 	    	change: function( event, data ) {
 	    		change_code(data.item.value);
@@ -26,7 +34,7 @@
 	 
 	    $( "#mode" ).selectmenu({
 	    	change: function( event, data ) {
-	    		test1(selcode);
+	    		reqenc(selcode);
 	       }
 	     })
 	    .selectmenu( "option", "width", "auto" )
@@ -35,7 +43,7 @@
 	 
 	    $( "#charset" ).selectmenu({
 	    	change: function( event, data ) {
-	    		test1(selcode);
+	    		reqenc(selcode);
 	       }
 	     })
 	    .selectmenu( "option", "width", "auto" )
@@ -44,9 +52,19 @@
 	 
 	    $('#hashing').css('display', 'none');
 	    change_code("0");
+
+	    // event handler bind
+	    $("#swap").on("click", function(event) { swap(); });
+	    $("#Encode").on("input", function(event) { reqenc(0); });
+	    $("#Decode").on("input", function(event) { reqenc(1); });
+	    $("#Plain").on("input", function(event) { reqenc(2); });
+	    $("#Text").on("input", function(event) { reqenc(3); });
+	    $("#Encrypted").on("input", function(event) { reqenc(4); });
+	    $("#Input").on("input", function(event) { reqjs(); });
+
   } );
 
-
+	// ### Options ###
 	// Code Event
 	// 0 en/decode 1 hashing 2 en/decryption
 	function change_code(code) {
@@ -73,13 +91,13 @@
 			case "2":
 				selcode = 3;
 				$('#endecrypt').css('display', 'block');
-				option_data = {"AES":{"aes-128-cbc":"AES-128-CBC","aes-256-cbc":"AES-256-CBC"}};
+				option_data = {"AES":{"aes-128-cbc":"AES-128-CBC","aes-192-cbc":"AES-192-CBC","aes-256-cbc":"AES-256-CBC"},"DES":{"des-ede3":"3DES","des-ede3-cbc":"3DES-CBC"}};
 				break
-			//case "3":
-			//	selcode = 4;
-			//	$('#translator').css('display', 'block');
-			//	option_data = "";
-			//	break
+			case "3":
+				selcode = 5;
+				$('#translator').css('display', 'block');
+				option_data = {"":{"reverse":"reverse","rot13":"rot13"}};
+				break
 		}
 
 		// change mode option event
@@ -97,7 +115,30 @@
 		$( "#mode" ).selectmenu("refresh");
 	}
 
+	function swap() {
+		switch(selcode) {
+			case 0:
+				$("#Encode").val($("#Decode").val());
+				reqenc(selcode);
+				break
+			case 2:
+				$("#Plain").val($("#Hash").val());
+				reqenc(selcode);
+				break
+			case 3:
+				$("#Text").val($("#Encrypted").val());
+				reqenc(selcode)
+				break
+			case 5:
+				$("#Input").val($("#Output").val());
+				reqjs()
+				break
+		}
+	}
 
+	// ### Options End ###
+
+	// ### Request and Response ###
 
 	function getresult(formData) {
 		let temp;
@@ -118,8 +159,8 @@
 		return temp;
 	}
 
-	function test1(code) {
-
+	function reqenc(code) {
+		console.log(code);
 		let val;
 		switch(code) {
 			case 0:
@@ -133,9 +174,12 @@
 				break
 			case 3:
 				val = $("#Text").val();
+				val = val + "&key=" + $("#Key").val() +"&IV=" + $("#IV").val();
+				console.log(val);
 				break
 			case 4:
 				val = encodeURIComponent($("#Encrypted").val());
+				val = val + "&key=" + $("#Key").val() +"&IV=" + $("#IV").val();
 				break
 		}
 		const formData = $("#test").serialize()+"&code="+code+"&data="+val;
@@ -161,22 +205,50 @@
 
 	}
 
-	function swap() {
-		switch(selcode) {
-			case 0:
-				$("#Encode").val($("#Decode").val());
-				test1(selcode);
-				break
-			case 2:
-				$("#Plain").val($("#Hash").val());
-				test1(selcode);
-				break
-			case 3:
-				$("#Text").val($("#Encrypted").val());
-				test1(selcode)
-				break
-		}
+	function reqjs() {
+		result = window[$("#mode").val()]();
+
+		$("#Output").val(result);
 	}
+
+	// ### Request and Response End ###
+
+	// ### reqjs ### 
+
+	function reverse() {
+		let result = ''
+		const array = $("#Input").val();
+		for ( i of array ) {
+    	result = i + result;
+		}
+
+		return result;
+	}
+	
+	function rot13() {
+		let result = ''
+		const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+		const array = $("#Input").val();
+		for ( i in alphabet ) {
+			result += "ROT["+i+"] => "
+			for ( j of array ) {
+				if (alphabet.indexOf(j.toLowerCase()) != -1 && alphabet.indexOf(j) != -1 ) {
+					result += alphabet[(alphabet.indexOf(j)+parseInt(i))%26];
+				}
+				else if (alphabet.indexOf(j.toLowerCase()) != -1){
+					result += alphabet[(alphabet.indexOf(j.toLowerCase())+parseInt(i))%26].toUpperCase();
+				}
+				else {
+					result += j;
+				}
+			}
+			result += "\n"
+		}
+
+		return result;
+	}
+	// ### reqjs END ### 
+	
 
 </script>
 
@@ -186,25 +258,44 @@
 <div id=box>
 <fieldset id=endecode>
 	<legend>EN/DEcoder</legend>
-	<textarea id="Encode" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(0); ></textarea>
-	<textarea id="Decode" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(1);></textarea>
+	<div class=half>
+		<textarea id="Encode" class="ui-widget ui-state-default ui-corner-all w100 h100" ></textarea>
+	</div>
+	<div class=half>
+	<textarea id="Decode" class="ui-widget ui-state-default ui-corner-all w100 h100" ></textarea>
+	</div>
 </fieldset>
 <fieldset id=hashing>
 	<legend>Hash Generator</legend>
-	<textarea id="Plain" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(2); ></textarea>
-	<textarea id="Hash" class="ui-widget ui-state-default ui-corner-all half" ></textarea>
+	<div class=half>
+		<textarea id="Plain" class="ui-widget ui-state-default ui-corner-all w100 h100" ></textarea>
+	</div>
+	<div class=half>
+		<textarea id="Hash" class="ui-widget ui-state-default ui-corner-all w100 h100" ></textarea>
+	</div>
 </fieldset>
 <fieldset id=endecrypt>
 	<legend>EN/DEcrypt</legend>
-	<textarea id="Text" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(3); ></textarea>
-	<textarea id="Encrypted" class="ui-widget ui-state-default ui-corner-all half" oninput=test1(4);></textarea>
+	<div class=half>
+
+	<textarea id="Key" class="ui-widget ui-state-default ui-corner-all w100 hauto" placeholder="Key"></textarea>
+	<textarea id="Text" class="ui-widget ui-state-default ui-corner-all w100 h85" ></textarea>
+
+</div>
+	<div class=half>
+	<textarea id="IV" class="ui-widget ui-state-default ui-corner-all w100 hauto" placeholder="IV"></textarea>
+		<textarea id="Encrypted" class="ui-widget ui-state-default ui-corner-all w100 h85" ></textarea>
+	</div>
 </fieldset>
-<!--
 <fieldset id=translator>
 	<legend>Translator</legend>
-	<textarea id="Plain" class="ui-widget ui-state-default ui-corner-all half" ></textarea>
-	<textarea id="Hash" class="ui-widget ui-state-default ui-corner-all half" ></textarea>
-</fieldset> -->
+	<div class=half>
+		<textarea id="Input" class="ui-widget ui-state-default ui-corner-all w100 h100" ></textarea>
+	</div>
+	<div class=half>
+		<textarea id="Output" class="ui-widget ui-state-default ui-corner-all w100 h100" ></textarea>
+	</div>
+</fieldset> 
 
   <fieldset>
   	<legend>Choose Options</legend>
@@ -214,7 +305,7 @@
       <option selected="selected" value="0">En/Decode</option>
       <option value="1">Hash</option>
       <option value="2">En/Decrypt</option>
-      <!-- <option value="3">Translator</option> -->
+      <option value="3">Translator</option>
     </select>
   </div>
  <form id="test" name="test" method="post"> 
@@ -238,7 +329,7 @@
     </select>
   </div>
  </form>
- <input id="swap" class="ui-button ui-corner-all ui-widget options_r" type="button" value="send output to input" onclick=swap(); />
+ <input id="swap" class="ui-button ui-corner-all ui-widget options_r" type="button" value="send output to input" />
 </fieldset>
 </div>
 </body>
