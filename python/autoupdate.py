@@ -15,16 +15,14 @@ def file_path_delete(prev_version,sub_path):
 	check_str = ['-r ', '-rf ', '-f ', '..', '../', '\.\.', '\..', '.\.' , '*', '/bin', '/boot', '/dev', '/etc', '/home', '/root', '/usr', '/sys', '/var']
 	warn = [s for s in check_str if s in prev_version]
 
-	#warn = 0
-	#for i in check_str:
-	#	if (prev_version.find(i) != -1 ):
-	#		warn = 1
-
 	if (len(warn) > 0) :
 		print('## Find Dangerous String ['+prev_version+'] : Skip Remove File')
 	else : 
 		#os.system('rm "'+path_public+sub_path+prev_version+'"')
-		os.remove(path_public+sub_path+prev_version)
+		try :
+			os.remove(path_public+sub_path+prev_version)
+		except FileNotFoundError :
+			print('## Not Fonud ['+prev_version+'] : Skip Remove File')
 
 
 def prev_version_parse(path):
@@ -60,31 +58,10 @@ def burp_update(url,select):
 		for i in j['builds'] :
         #for i in burp_parse :
 			product_id = i['ProductId']
-#		print(product_id)
+	#	print(product_id)
 			if (product_id == select) : 
 				burp_version = i['Version']			
 				return ['https://portswigger-cdn.net/burp/releases/download?product='+select+'&version='+burp_version+'&type=WindowsX64','burpsuite_'+select+'_windows-x64_v'+'_'.join(burp_version.split('.'))+'.exe']
-
-	# OLD
-	''' 
-	product_id = burp_parse
-	pi_path = ['ResultSet','Results',0,'builds',0,'ProductId']
-	while (product_id != 'community'):
-		product_id = burp_parse
-		for i in pi_path :
-			product_id = product_id[i]
-		pi_path[2] = pi_path[2]+1
-		#print(burp_parse['ResultSet']['Results'][0]['builds'])
-
-	else :
-		pi_path[2] = pi_path[2]-1
-		pi_path[5] = 'Version'
-		burp_version = burp_parse
-		for i in pi_path :
-			burp_version = burp_version[i]
-
-		return ['https://portswigger-cdn.net/burp/releases/download?product='+select+'&version='+burp_version+'&type=WindowsX64','burpsuite_'+select+'_windows-x64_v'+'_'.join(burp_version.split('.'))+'.exe']
-	'''
 
 # github download 20230731
 def github_update(url,select):
@@ -144,19 +121,16 @@ print('#############################################')
 
 update('Burp Suite Pro','https://portswigger.net/burp/releases/data?pageSize=2','pro','burppro_version','Proxy/')
 update('Burp Suite Community','https://portswigger.net/burp/releases/data?pageSize=2','community','burpcom_version','Proxy/')
-update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','')
-update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','')
 update('WireShark','https://www.wireshark.org/download.html','#download-accordion > div:nth-child(1) > details > div > ul > li:nth-child(1) > a','wireshark_version','Network/')
-#update('Apktool','https://ibotpeaches.github.io/Apktool/install/','#navbar > ul > li:nth-child(7) > a','apktool_version','Mobile/')
-update('github_Apktool','https://api.github.com/repos/iBotPeaches/Apktool/releases/latest','apktool_[0-9.]+','apktool_version','Mobile/')
 update('Nmap','https://nmap.org/download','b > a','nmap_version','Network/')
 update('Bitvise SSH Client','https://www.bitvise.com/ssh-client-download','#content > div','bitvise_version','')
 update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','')
+update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','')
+update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','')
+update('github_Apktool','https://api.github.com/repos/iBotPeaches/Apktool/releases/latest','apktool_[0-9.]+','apktool_version','Mobile/')
 update('ADB', 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip','a','adb_version','Mobile/')
 update('github_jadx','https://api.github.com/repos/skylot/jadx/releases/latest','jadx-gui-[0-9.]+-with-jre-win','jadx_version','Mobile/')
 
 print('#############################################')
 print('#                 Update End                #')
 print('#############################################')
-
-# frida server curl -s https://api.github.com/repos/frida/frida/releases/latest | grep "browser_download_url.*server.*android.*"
