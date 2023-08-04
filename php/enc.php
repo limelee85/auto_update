@@ -1,7 +1,6 @@
 <?php
-    # DEBUG
-    error_reporting(E_ALL);
-    ini_set('display_errors', '1');
+    #error_reporting(E_ALL);
+    #ini_set('display_errors', '1');
 
     # XSS prevent
     header('Content-Type: text/plain');
@@ -11,6 +10,8 @@
     $mode = $_POST['mode'];
     $data = $_POST['data'];
     $charset = $_POST['charset'];
+    $secret = $_POST['key'];
+    $iv = $_POST['IV'];
 
     # CHARSET
     $charset_array = array("utf-8", "euc-kr", "ASCII", "ISO-8859-1", "utf-7", "utf-16", "utf-32");
@@ -84,10 +85,7 @@
 
         $cipher_array = openssl_get_cipher_methods();
         // array_search("aes-128-cbc",$cipher_array) is 0(False) ==> $key = $key + 1
-        $key = array_search($mode, $cipher_array)+1;
-        // test key & test iv
-        $secret = '1234567812345678';
-        $iv = '0000000000000000';
+	$key = array_search($mode, $cipher_array)+1;
         if ($key) {
             $input = iconv("utf-8",$charset,$data);
             $result = openssl_encrypt($input, $mode, $secret, 0, $iv);
@@ -102,9 +100,6 @@
         $key = array_search($mode, $cipher_array);
         // array_search("aes-128-cbc",$cipher_array) is 0(False) ==> $key = $key + 1
         $key = array_search($mode, $cipher_array)+1;
-        // test key & test iv
-        $secret = '1234567812345678';
-        $iv = '0000000000000000';
         if ($key) {
             $input = openssl_decrypt(urldecode($data), $mode, $secret, 0, $iv);
         }
