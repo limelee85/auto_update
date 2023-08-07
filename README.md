@@ -7,13 +7,13 @@
   1. L4D2 무료 주말 확인 스크립트
   2. sns 'X'에 자동 게시 (@l4d2freeweekend)
 
-## php
+## php (convertorV3.0)
 - enc.php
   1. base64, url, hex en/decoding 지원
   2. hash 지원
   3. en/decryption 지원
   4. charset 지정 가능
 - enc_test.html
-  1. enc.php UI
-  2. 출력 값 -> 입력 값으로 넣는 기능
-  3. translator -> reverse, rot13
+  1. enc.php의 UI
+  2. 출력 값 -> 입력 값으로 넣는 기능 
+  3. translator -> reverse, rot13, sort, uniq
