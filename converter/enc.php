@@ -84,10 +84,11 @@
     elseif ( $code === "3") {
 
         $cipher_array = openssl_get_cipher_methods();
-        // array_search("aes-128-cbc",$cipher_array) is 0(False) ==> $key = $key + 1
-	$key = array_search($mode, $cipher_array)+1;
-        if ($key) {
-            $input = iconv("utf-8",$charset,$data);
+	// array_search("aes-128-cbc",$cipher_array) is 0(False) ==> $key = $key + 1 // 20230808 remove $key = $key +1
+	$key = array_search($mode, $cipher_array);
+	// 20230808 if($key) ==> if(!empty($key))
+	if (!empty($key)) {
+	    $input = iconv("utf-8",$charset,$data);
             $result = openssl_encrypt($input, $mode, $secret, 0, $iv);
             
         }
@@ -98,9 +99,9 @@
     elseif ( $code === "4") {
         $cipher_array = openssl_get_cipher_methods();
         $key = array_search($mode, $cipher_array);
-        // array_search("aes-128-cbc",$cipher_array) is 0(False) ==> $key = $key + 1
-        $key = array_search($mode, $cipher_array)+1;
-        if ($key) {
+        // array_search("aes-128-cbc",$cipher_array) is 0(False) ==> $key = $key + 1 // 20230808 remove $key = $key +1
+	$key = array_search($mode, $cipher_array);
+	if (!empty($key)) {
             $input = openssl_decrypt(urldecode($data), $mode, $secret, 0, $iv);
         }
         $result = iconv($charset,"utf-8",$input);
