@@ -15,3 +15,4 @@ Online : https://limelee.xyz/files/public/tools/
 9. [DB Browser](https://sqlitebrowser.org/)
 10. [ADB](https://developer.android.com/studio/releases/platform-tools?hl=ko)
 11. [jadx](https://github.com/skylot/jadx)
+12. [pickpick](https://picpick.net/)
