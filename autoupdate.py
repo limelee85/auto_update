@@ -23,6 +23,9 @@ def file_path_delete(prev_version,sub_path):
 			os.remove(path_public+sub_path+prev_version)
 		except FileNotFoundError :
 			print('## Not Fonud ['+prev_version+'] : Skip Remove File')
+		# 20230831 version file is empty
+		except IsADirectoryError :
+			print('## Not Found ['+prev_version+'] : Skip Remove File')
 
 
 def prev_version_parse(path):
@@ -93,6 +96,10 @@ def update(name,url,select,version_file,sub_path) :
 			parse = temp_result[0]
 			version = temp_result[1]
 			prev_version = prev_version_parse(version_file)
+		elif (name == 'PickPick') :
+			parse = parser(url,select)[0]['href']
+			version = parse.split('/')[-1]+'#'+parse.split('/')[-2]
+			prev_version = prev_version_parse(version_file)
 		else :
 			parse = parser(url,select)[0]['href']
 			version = parse.split('/')[-1]
@@ -124,12 +131,13 @@ update('Burp Suite Community','https://portswigger.net/burp/releases/data?pageSi
 update('WireShark','https://www.wireshark.org/download.html','#download-accordion > div:nth-child(1) > details > div > ul > li:nth-child(1) > a','wireshark_version','Network/')
 update('Nmap','https://nmap.org/download','b > a','nmap_version','Network/')
 update('Bitvise SSH Client','https://www.bitvise.com/ssh-client-download','#content > div','bitvise_version','')
-update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','')
+update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','Editor')
 update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','')
-update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','')
+update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','Editor/')
 update('github_Apktool','https://api.github.com/repos/iBotPeaches/Apktool/releases/latest','apktool_[0-9.]+','apktool_version','Mobile/')
 update('ADB', 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip','a','adb_version','Mobile/')
 update('github_jadx','https://api.github.com/repos/skylot/jadx/releases/latest','jadx-gui-[0-9.]+-with-jre-win','jadx_version','Mobile/')
+update('PickPick','https://picpick.net/download/kr/','#gatsby-focus-wrapper > div > div > div:nth-child(3) > div > p > a:nth-child(2)','pickpick_version','Editor/')
 
 print('#############################################')
 print('#                 Update End                #')
