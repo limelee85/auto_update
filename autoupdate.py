@@ -50,18 +50,14 @@ def parser(url, select) :
 def json_parse(url):
 	URL = url
 	v = requests.get(URL)
-	#print(json.loads(v.text)['ResultSet']['Results'][0]['builds'][0]['ProductId'])
 	return(json.loads(v.text))
 
 def burp_update(url,select):
 	burp_parse = json_parse(url)
 	# NEW 20230615 // 20230706 edit
 	for j in burp_parse['ResultSet']['Results']:
-	#burp_parse = burp_parse['ResultSet']['Results'][0]['builds']
 		for i in j['builds'] :
-        #for i in burp_parse :
 			product_id = i['ProductId']
-	#	print(product_id)
 			if (product_id == select) : 
 				burp_version = i['Version']			
 				return ['https://portswigger-cdn.net/burp/releases/download?product='+select+'&version='+burp_version+'&type=WindowsX64','burpsuite_'+select+'_windows-x64_v'+'_'.join(burp_version.split('.'))+'.exe']
@@ -100,6 +96,11 @@ def update(name,url,select,version_file,sub_path) :
 			parse = parser(url,select)[0]['href']
 			version = parse.split('/')[-1]+'#'+parse.split('/')[-2]
 			prev_version = prev_version_parse(version_file)
+		elif (name == 'Putty') :
+			parse = parser(url,select)
+			version = "putty.exe#"+re.sub(r'[^0-9\.]', '', parse[0].text)
+			parse = 'https://the.earth.li/~sgtatham/putty/'+re.sub(r'[^0-9\.]', '', parse[0].text)+'/w64/'+version
+			prev_version = prev_version_parse(version_file)
 		else :
 			parse = parser(url,select)[0]['href']
 			version = parse.split('/')[-1]
@@ -130,14 +131,15 @@ update('Burp Suite Pro','https://portswigger.net/burp/releases/data?pageSize=2',
 update('Burp Suite Community','https://portswigger.net/burp/releases/data?pageSize=2','community','burpcom_version','Proxy/')
 update('WireShark','https://www.wireshark.org/download.html','#download-accordion > div:nth-child(1) > details > div > ul > li:nth-child(1) > a','wireshark_version','Network/')
 update('Nmap','https://nmap.org/download','b > a','nmap_version','Network/')
-update('Bitvise SSH Client','https://www.bitvise.com/ssh-client-download','#content > div','bitvise_version','')
+update('Bitvise SSH Client','https://www.bitvise.com/ssh-client-download','#content > div','bitvise_version','SSH/')
+update('Putty','https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html','body > h1','putty_version','SSH/')
 update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','Editor')
-update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','')
 update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','Editor/')
-update('github_Apktool','https://api.github.com/repos/iBotPeaches/Apktool/releases/latest','apktool_[0-9.]+','apktool_version','Mobile/')
-update('ADB', 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip','a','adb_version','Mobile/')
-update('github_jadx','https://api.github.com/repos/skylot/jadx/releases/latest','jadx-gui-[0-9.]+-with-jre-win','jadx_version','Mobile/')
 update('PickPick','https://picpick.net/download/kr/','#gatsby-focus-wrapper > div > div > div:nth-child(3) > div > p > a:nth-child(2)','pickpick_version','Editor/')
+update('github_Apktool','https://api.github.com/repos/iBotPeaches/Apktool/releases/latest','apktool_[0-9.]+','apktool_version','Mobile/')
+update('github_jadx','https://api.github.com/repos/skylot/jadx/releases/latest','jadx-gui-[0-9.]+-with-jre-win','jadx_version','Mobile/')
+update('ADB', 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip','a','adb_version','Mobile/')
+update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','')
 
 print('#############################################')
 print('#                 Update End                #')
