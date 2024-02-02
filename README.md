@@ -22,5 +22,7 @@ Online : https://limelee.xyz/files/public/tools/
 11. [DB Browser](https://sqlitebrowser.org/)
 12. [pickpick](https://picpick.net/)
 13. [Sublime Text](https://www.sublimetext.com/)
+14. [DBeaver](https://dbeaver.io/)
+15. [hashcat](https://hashcat.net/hashcat/)
 - Etc
-14. [Python](https://www.python.org/)
+16. [Python](https://www.python.org/)

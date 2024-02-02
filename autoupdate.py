@@ -144,10 +144,12 @@ update('ADB', 'https://dl.google.com/android/repository/platform-tools-latest-wi
 update('3utools','https://url.3u.com/zmAJjyaa','Location','3utools_version','Mobile/')
 update('Bitvise SSH Client','https://www.bitvise.com/ssh-client-download','#content > div','bitvise_version','SSH/')
 update('Putty','https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html','body > h1','putty_version','SSH/')
-update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','Editor')
+update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','Editor/')
 update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','Editor/')
+update('github_DBeaver','https://api.github.com/repos/dbeaver/dbeaver/releases/latest','dbeaver-ce-[0-9.]+-x86_64-setup.exe','DBeaver_version','Editor/')
 update('PickPick','https://picpick.net/download/kr/','#gatsby-focus-wrapper > div > div > div:nth-child(3) > div > p > a:nth-child(2)','pickpick_version','Editor/')
 update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','')
+update('github_hashcat','https://api.github.com/repos/hashcat/hashcat/releases/latest','hashcat-[0-9.]+.7z','hashcat_version','Editor/')
 
 print('#############################################')
 print('#                 Update End                #')
