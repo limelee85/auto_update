@@ -5,10 +5,11 @@ from time import sleep
 import datetime
 import json
 import re
+import shutil
 
 path_public = os.getenv('PATH_PUBLIC')
 version_path = os.getenv('PATH_VERSION')
-
+is_change = 0
 
 def file_path_delete(prev_version,sub_path):
 
@@ -16,17 +17,15 @@ def file_path_delete(prev_version,sub_path):
 	warn = [s for s in check_str if s in prev_version]
 
 	if (len(warn) > 0) :
-		print('## Find Dangerous String ['+prev_version+'] : Skip Remove File')
+		print('## Find Dangerous String [ {} ] : Skip Remove File'.format(prev_version))
 	else : 
 		#os.system('rm "'+path_public+sub_path+prev_version+'"')
 		try :
 			os.remove(path_public+sub_path+prev_version)
 		except FileNotFoundError :
-			print('## Not Fonud ['+prev_version+'] : Skip Remove File')
-		# 20230831 version file is empty
+			print('## Not Fonud [ {} ] : Skip Remove File'.format(prev_version))
 		except IsADirectoryError :
-			print('## Not Found ['+prev_version+'] : Skip Remove File')
-
+			print('## Not Found [ {} ] : Skip Remove File'.format(prev_version))
 
 def prev_version_parse(path):
 	vf = open(version_path+path,'r')
@@ -57,13 +56,12 @@ def json_parse(url):
 
 def burp_update(url,select):
 	burp_parse = json_parse(url)
-	# NEW 20230615 // 20230706 edit
 	for j in burp_parse['ResultSet']['Results']:
 		for i in j['builds'] :
 			product_id = i['ProductId']
 			if (product_id == select) : 
 				burp_version = i['Version']			
-				return ['https://portswigger-cdn.net/burp/releases/download?product='+select+'&version='+burp_version+'&type=WindowsX64','burpsuite_'+select+'_windows-x64_v'+'_'.join(burp_version.split('.'))+'.exe']
+				return ['https://portswigger-cdn.net/burp/releases/download?product={}&version={}&type=WindowsX64'.format(select,burp_version),'burpsuite_{}_windows-x64_v{}.exe'.format(select,'_'.join(burp_version.split('.')))]
 
 # github download 20230731
 def github_update(url,select):
@@ -83,55 +81,64 @@ def update(name,url,select,version_file,sub_path) :
 			temp_result = burp_update(url,select)
 			parse = temp_result[0]
 			version = temp_result[1]
-			prev_version = prev_version_parse(version_file)
 		elif (name == 'Bitvise SSH Client') :
 			parse = parser(url,select)[0]
 			parse = parse.find('a')['href']+'#'+parse.text.split(',')[0].split(':')[1].strip()
 			version = parse.split('/')[-1]
-			prev_version = prev_version_parse(version_file)
 		elif (name.find("github") != -1) :
-			# github download 20230731
 			temp_result = github_update(url,select)
 			parse = temp_result[0]
 			version = temp_result[1]
-			prev_version = prev_version_parse(version_file)
 		elif (name == 'PickPick') :
 			parse = parser(url,select)[0]['href']
 			version = parse.split('/')[-1]+'#'+parse.split('/')[-2]
-			prev_version = prev_version_parse(version_file)
 		elif (name == 'Putty') :
 			parse = parser(url,select)
 			version = "putty.exe#"+re.sub(r'[^0-9\.]', '', parse[0].text)
 			parse = 'https://the.earth.li/~sgtatham/putty/'+re.sub(r'[^0-9\.]', '', parse[0].text)+'/w64/'+version
-			prev_version = prev_version_parse(version_file)
 		elif (name == 'ADB' or name == '3utools') :
 			parse = parser(url,select)
 			version = parse.split('/')[-1]
-			prev_version = prev_version_parse(version_file)
 		else :
 			parse = parser(url,select)[0]['href']
 			version = parse.split('/')[-1]
-			prev_version = prev_version_parse(version_file)
-
-
+			
+		prev_version = prev_version_parse(version_file)
 
 		if (version != prev_version) :
 			## update
-			print('# '+name+' Update '+prev_version+' to '+version)
+			global is_change
+			is_change = 1
+			print('# {} Update {} to {}'.format(name,prev_version,version))
 			print('## Remove previous version')
 			file_path_delete(prev_version,sub_path)
 			print('## Download lastest version')
-			os.system('wget -O '+path_public+sub_path+version.split('#')[0]+' "'+parse+'"')
+			os.system('wget -O {}{}{} "{}"'.format(path_public,sub_path,version.split('#')[0],parse))
 			lastest_version_write(version_file,version)
 			print('## Complete!')
 		else :
-			print('# '+name+' is latest version : Skip')
+			print('# {} is latest version : Skip'.format(name))
 	except IndexError as e:
-		print('# '+name+' occurs Error! : '+ str(e))
+		print('# {} occurs Error! : {}'.format(name,e))
+
+def archive(path) :
+
+	print('# Archive Tools folder : There is an update history')
+	print('## Delete prev Tools Archive file')
+	for f in os.listdir(path+'/../'):
+		if re.search('tools_.*zip', f):
+			print('## Remove file : {}'.format(f))
+			os.remove(os.path.join(path+'/../', f))
+
+	print('## Create New Archive file')
+	date = str(datetime.datetime.now().strftime("%y%m%d"))
+	shutil.make_archive('{}/../tools_{}'.format(path,date), 'zip', root_dir=path)
+	print('## Create file : tools_{}.zip'.format(date))
+	print('## Complete!')
 
 
 print('\n\n\n#############################################')
-print('# Update Start : '+str(datetime.datetime.now())+' #')
+print('# Update Start :{:^28}#'.format(str(datetime.datetime.now().strftime("%Y/%m/%d %H:%m"))))
 print('#############################################')
 
 update('Burp Suite Pro','https://portswigger.net/burp/releases/data?pageSize=3','pro','burppro_version','Proxy/')
@@ -151,6 +158,8 @@ update('PickPick','https://picpick.net/download/kr/','#gatsby-focus-wrapper > di
 update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','')
 update('github_hashcat','https://api.github.com/repos/hashcat/hashcat/releases/latest','hashcat-[0-9.]+.7z','hashcat_version','Editor/')
 
+if is_change != 0 : archive(path_public)
+
 print('#############################################')
-print('#                 Update End                #')
+print('#{:^43}#'.format('Update End'))
 print('#############################################')
