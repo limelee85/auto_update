@@ -8,7 +8,7 @@ import re
 import shutil
 
 path_public = os.getenv('PATH_PUBLIC')
-version_path = os.getenv('PATH_VERSION')
+version_path = os.path.dirname(__file__)+'/data/version/'
 is_change = 0
 
 def file_path_delete(prev_version,sub_path):
@@ -19,7 +19,6 @@ def file_path_delete(prev_version,sub_path):
 	if (len(warn) > 0) :
 		print('## Find Dangerous String [ {} ] : Skip Remove File'.format(prev_version))
 	else : 
-		#os.system('rm "'+path_public+sub_path+prev_version+'"')
 		try :
 			os.remove(path_public+sub_path+prev_version)
 		except FileNotFoundError :
@@ -40,8 +39,6 @@ def lastest_version_write(path, version):
 
 def parser(url, select) :
 	URL = url
-	# 230707 : add allow_redirects option => adb 302 response , 230905 no need
-	# 230905 : add adb, 3utools redirects Location header parse
 	v = requests.get(URL , allow_redirects=False)
 	if (select != 'Location') :
 		result = bs(v.text, 'html.parser')
@@ -52,14 +49,14 @@ def parser(url, select) :
 def json_parse(url):
 	URL = url
 	v = requests.get(URL)
+	#print(v.text)
 	return(json.loads(v.text))
 
 def burp_update(url,select):
 	burp_parse = json_parse(url)
 	for j in burp_parse['ResultSet']['Results']:
 		for i in j['builds'] :
-			product_id = i['ProductId']
-			if (product_id == select) : 
+			if (i['ProductId'] == select) : 
 				burp_version = i['Version']			
 				return ['https://portswigger-cdn.net/burp/releases/download?product={}&version={}&type=WindowsX64'.format(select,burp_version),'burpsuite_{}_windows-x64_v{}.exe'.format(select,'_'.join(burp_version.split('.')))]
 
@@ -96,7 +93,10 @@ def update(name,url,select,version_file,sub_path) :
 			parse = parser(url,select)
 			version = "putty.exe#"+re.sub(r'[^0-9\.]', '', parse[0].text)
 			parse = 'https://the.earth.li/~sgtatham/putty/'+re.sub(r'[^0-9\.]', '', parse[0].text)+'/w64/'+version
-		elif (name == 'ADB' or name == '3utools') :
+		elif (name == 'ADB') :
+			version = 'platform-tools_r{}-windows.zip'.format(parser(url,select)[0].text.split(' ')[0])
+			parse = 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip'
+		elif (name == '3utools') :
 			parse = parser(url,select)
 			version = parse.split('/')[-1]
 		else :
@@ -106,7 +106,6 @@ def update(name,url,select,version_file,sub_path) :
 		prev_version = prev_version_parse(version_file)
 
 		if (version != prev_version) :
-			## update
 			global is_change
 			is_change = 1
 			print('# {} Update {} to {}'.format(name,prev_version,version))
@@ -118,7 +117,10 @@ def update(name,url,select,version_file,sub_path) :
 			print('## Complete!')
 		else :
 			print('# {} is latest version : Skip'.format(name))
+
 	except IndexError as e:
+		print('# {} occurs Error! : {}'.format(name,e))
+	except KeyError as e :
 		print('# {} occurs Error! : {}'.format(name,e))
 
 def archive(path) :
@@ -141,22 +143,23 @@ print('\n\n\n#############################################')
 print('# Update Start :{:^28}#'.format(str(datetime.datetime.now().strftime("%Y/%m/%d %H:%m"))))
 print('#############################################')
 
-update('Burp Suite Pro','https://portswigger.net/burp/releases/data?pageSize=3','pro','burppro_version','Proxy/')
-update('Burp Suite Community','https://portswigger.net/burp/releases/data?pageSize=3','community','burpcom_version','Proxy/')
+update('Burp Suite Pro','https://portswigger.net/burp/releases/data?pageSize=6','pro','burppro_version','Proxy/')
+update('Burp Suite Community','https://portswigger.net/burp/releases/data?pageSize=6','community','burpcom_version','Proxy/')
 update('WireShark','https://www.wireshark.org/download.html','#download-accordion > div:nth-child(1) > details > div > ul > li:nth-child(1) > a','wireshark_version','Network/')
 update('Nmap','https://nmap.org/download','b > a','nmap_version','Network/')
+update('github_sslscan','https://api.github.com/repos/rbsec/sslscan/releases/latest','sslscan-[0-9.]+.zip','sslscan_version','Network/')
 update('github_Apktool','https://api.github.com/repos/iBotPeaches/Apktool/releases/latest','apktool_[0-9.]+','apktool_version','Mobile/')
 update('github_jadx','https://api.github.com/repos/skylot/jadx/releases/latest','jadx-gui-[0-9.]+-with-jre-win','jadx_version','Mobile/')
-update('ADB', 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip','Location','adb_version','Mobile/')
+update('ADB', 'https://developer.android.com/tools/releases/platform-tools?hl=ko','h4','adb_version','Mobile/')
 update('3utools','https://url.3u.com/zmAJjyaa','Location','3utools_version','Mobile/')
 update('Bitvise SSH Client','https://www.bitvise.com/ssh-client-download','#content > div','bitvise_version','SSH/')
 update('Putty','https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html','body > h1','putty_version','SSH/')
-update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','Editor/')
+update('github_DBeaver','https://api.github.com/repos/dbeaver/dbeaver/releases/latest','dbeaver-ce-[0-9.]+-x86_64-setup.exe','DBeaver_version','DB/')
+update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','DB/')
 update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','Editor/')
-update('github_DBeaver','https://api.github.com/repos/dbeaver/dbeaver/releases/latest','dbeaver-ce-[0-9.]+-x86_64-setup.exe','DBeaver_version','Editor/')
 update('PickPick','https://picpick.net/download/kr/','#gatsby-focus-wrapper > div > div > div:nth-child(3) > div > p > a:nth-child(2)','pickpick_version','Editor/')
-update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','')
-update('github_hashcat','https://api.github.com/repos/hashcat/hashcat/releases/latest','hashcat-[0-9.]+.7z','hashcat_version','Editor/')
+update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','Language/')
+update('github_hashcat','https://api.github.com/repos/hashcat/hashcat/releases/latest','hashcat-[0-9.]+.7z','hashcat_version','Cracker/')
 
 if is_change != 0 : archive(path_public)
 
