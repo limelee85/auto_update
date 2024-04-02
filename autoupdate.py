@@ -8,7 +8,7 @@ import re
 import shutil
 
 path_public = os.getenv('PATH_PUBLIC')
-version_path = os.path.dirname(__file__)+'/data/version/'
+version_path = os.path.dirname(__file__)+'/data/'
 is_change = 0
 
 def file_path_delete(prev_version,sub_path):
@@ -27,9 +27,15 @@ def file_path_delete(prev_version,sub_path):
 			print('## Not Found [ {} ] : Skip Remove File'.format(prev_version))
 
 def prev_version_parse(path):
-	vf = open(version_path+path,'r')
-	prev_version = vf.read().replace('\n', '')
-	vf.close()
+	try:
+		vf = open(version_path+path,'r')
+		prev_version = vf.read().replace('\n', '')
+		vf.close()
+	except FileNotFoundError as e:
+		print('## Not Found [{}] : Create New File'.format(path))
+		vf = open(version_path+path,'x')
+		vf.close()
+		prev_version = ''
 	return prev_version
 
 def lastest_version_write(path, version):
@@ -102,7 +108,7 @@ def update(name,url,select,version_file,sub_path) :
 		else :
 			parse = parser(url,select)[0]['href']
 			version = parse.split('/')[-1]
-			
+		
 		prev_version = prev_version_parse(version_file)
 
 		if (version != prev_version) :
@@ -159,6 +165,7 @@ update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > articl
 update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','Editor/')
 update('PickPick','https://picpick.net/download/kr/','#gatsby-focus-wrapper > div > div > div:nth-child(3) > div > p > a:nth-child(2)','pickpick_version','Editor/')
 update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','Language/')
+update('github_OpenJDK_Temurin','https://api.github.com/repos/adoptium/temurin8-binaries/releases/latest','OpenJDK8U-jdk_x64_windows_hotspot_[0-z]+.msi','java_version','Language/')
 update('github_hashcat','https://api.github.com/repos/hashcat/hashcat/releases/latest','hashcat-[0-9.]+.7z','hashcat_version','Cracker/')
 
 if is_change != 0 : archive(path_public)

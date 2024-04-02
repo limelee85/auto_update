@@ -29,3 +29,4 @@ Online : https://limelee.xyz/files/public/tools/
 16. [hashcat](https://hashcat.net/hashcat/)
 - Language
 17. [Python](https://www.python.org/)
+18. [OpenJDK 8(temurin)](https://github.com/adoptium/temurin8-binaries)
