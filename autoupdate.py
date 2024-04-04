@@ -11,20 +11,25 @@ path_public = os.getenv('PATH_PUBLIC')
 version_path = os.path.dirname(__file__)+'/data/'
 is_change = 0
 
+def check_str(string):
+	check_str = ['-r ', '-rf ', '-f ', '..', '../', '\.\.', '\..', '.\.' , '*', '/bin', '/boot', '/dev', '/etc', '/home', '/root', '/usr', '/sys', '/var', '"', '\\', ';', '\n', '\x00']
+	warn = [s for s in check_str if s in string]
+	if (len(warn) > 0) :
+		print('## Find Dangerous String [ {} ] : Skip Download/Remove File'.format(string))
+		return False
+	else :
+		return True
+
 def file_path_delete(prev_version,sub_path):
 
-	check_str = ['-r ', '-rf ', '-f ', '..', '../', '\.\.', '\..', '.\.' , '*', '/bin', '/boot', '/dev', '/etc', '/home', '/root', '/usr', '/sys', '/var']
-	warn = [s for s in check_str if s in prev_version]
-
-	if (len(warn) > 0) :
-		print('## Find Dangerous String [ {} ] : Skip Remove File'.format(prev_version))
-	else : 
+	if (check_str(prev_version)) :
 		try :
 			os.remove(path_public+sub_path+prev_version)
 		except FileNotFoundError :
 			print('## Not Fonud [ {} ] : Skip Remove File'.format(prev_version))
 		except IsADirectoryError :
 			print('## Not Found [ {} ] : Skip Remove File'.format(prev_version))
+		
 
 def prev_version_parse(path):
 	try:
@@ -88,7 +93,7 @@ def update(name,url,select,version_file,sub_path) :
 			parse = parser(url,select)[0]
 			parse = parse.find('a')['href']+'#'+parse.text.split(',')[0].split(':')[1].strip()
 			version = parse.split('/')[-1]
-		elif (name.find("github") != -1) :
+		elif (name.find('github') != -1) :
 			temp_result = github_update(url,select)
 			parse = temp_result[0]
 			version = temp_result[1]
@@ -97,12 +102,12 @@ def update(name,url,select,version_file,sub_path) :
 			version = parse.split('/')[-1]+'#'+parse.split('/')[-2]
 		elif (name == 'Putty') :
 			parse = parser(url,select)
-			version = "putty.exe#"+re.sub(r'[^0-9\.]', '', parse[0].text)
+			version = 'putty.exe#'+re.sub(r'[^0-9\.]', '', parse[0].text)
 			parse = 'https://the.earth.li/~sgtatham/putty/'+re.sub(r'[^0-9\.]', '', parse[0].text)+'/w64/'+version
 		elif (name == 'ADB') :
 			version = 'platform-tools_r{}-windows.zip'.format(parser(url,select)[0].text.split(' ')[0])
 			parse = 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip'
-		elif (name == '3utools') :
+		elif (name == '3utools' or name == 'FireFox') :
 			parse = parser(url,select)
 			version = parse.split('/')[-1]
 		else :
@@ -112,15 +117,16 @@ def update(name,url,select,version_file,sub_path) :
 		prev_version = prev_version_parse(version_file)
 
 		if (version != prev_version) :
-			global is_change
-			is_change = 1
-			print('# {} Update {} to {}'.format(name,prev_version,version))
-			print('## Remove previous version')
-			file_path_delete(prev_version,sub_path)
-			print('## Download lastest version')
-			os.system('wget -O {}{}{} "{}"'.format(path_public,sub_path,version.split('#')[0],parse))
-			lastest_version_write(version_file,version)
-			print('## Complete!')
+			if (check_str(version.split('#')[0]) and check_str(parse)) :
+				global is_change
+				is_change = 1
+				print('# {} Update {} to {}'.format(name,prev_version,version))
+				print('## Remove previous version')
+				file_path_delete(prev_version,sub_path)
+				print('## Download lastest version')
+				os.system('wget -O "{}{}{}" "{}"'.format(path_public,sub_path,version.split('#')[0],parse))
+				lastest_version_write(version_file,version)
+				print('## Complete!')
 		else :
 			print('# {} is latest version : Skip'.format(name))
 
@@ -139,14 +145,14 @@ def archive(path) :
 			os.remove(os.path.join(path+'/../', f))
 
 	print('## Create New Archive file')
-	date = str(datetime.datetime.now().strftime("%y%m%d"))
+	date = str(datetime.datetime.now().strftime('%y%m%d'))
 	shutil.make_archive('{}/../tools_{}'.format(path,date), 'zip', root_dir=path)
 	print('## Create file : tools_{}.zip'.format(date))
 	print('## Complete!')
 
 
 print('\n\n\n#############################################')
-print('# Update Start :{:^28}#'.format(str(datetime.datetime.now().strftime("%Y/%m/%d %H:%m"))))
+print('# Update Start :{:^28}#'.format(str(datetime.datetime.now().strftime('%Y/%m/%d %H:%m'))))
 print('#############################################')
 
 update('Burp Suite Pro','https://portswigger.net/burp/releases/data?pageSize=6','pro','burppro_version','Proxy/')
@@ -167,6 +173,7 @@ update('PickPick','https://picpick.net/download/kr/','#gatsby-focus-wrapper > di
 update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','Language/')
 update('github_OpenJDK_Temurin','https://api.github.com/repos/adoptium/temurin8-binaries/releases/latest','OpenJDK8U-jdk_x64_windows_hotspot_[0-z]+.msi','java_version','Language/')
 update('github_hashcat','https://api.github.com/repos/hashcat/hashcat/releases/latest','hashcat-[0-9.]+.7z','hashcat_version','Cracker/')
+update('FireFox','https://download.mozilla.org/?product=firefox-latest&os=win64&lang=ko','Location','FireFox_version','Browser/')
 
 if is_change != 0 : archive(path_public)
 

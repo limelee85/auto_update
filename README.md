@@ -30,3 +30,5 @@ Online : https://limelee.xyz/files/public/tools/
 - Language
 17. [Python](https://www.python.org/)
 18. [OpenJDK 8(temurin)](https://github.com/adoptium/temurin8-binaries)
+- Browser
+19. [FireFox offline installer](https://download-installer.cdn.mozilla.net/pub/firefox/releases/)
