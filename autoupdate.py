@@ -123,8 +123,10 @@ def update(name,url,select,version_file,sub_path) :
 				print('# {} Update {} to {}'.format(name,prev_version,version))
 				print('## Remove previous version')
 				file_path_delete(prev_version,sub_path)
-				print('## Download lastest version')
-				os.system('wget -O "{}{}{}" "{}"'.format(path_public,sub_path,version.split('#')[0],parse))
+				print('## Download lastest version : {}'.format(parse))
+				if not os.path.exists("{}{}".format(path_public,sub_path)):
+					os.makedirs("{}{}".format(path_public,sub_path))
+				os.system('wget -q -O "{}{}{}" "{}"'.format(path_public,sub_path,version.split('#')[0],parse))
 				lastest_version_write(version_file,version)
 				print('## Complete!')
 		else :
