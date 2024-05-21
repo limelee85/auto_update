@@ -154,7 +154,7 @@ def archive(path) :
 
 
 print('\n\n\n#############################################')
-print('# Update Start :{:^28}#'.format(str(datetime.datetime.now().strftime('%Y/%m/%d %H:%m'))))
+print('# Update Start :{:^28}#'.format(str(datetime.datetime.now().strftime('%Y/%m/%d %H:%M'))))
 print('#############################################')
 
 update('Burp Suite Pro','https://portswigger.net/burp/releases/data?pageSize=6','pro','burppro_version','Proxy/')
@@ -180,5 +180,5 @@ update('FireFox','https://download.mozilla.org/?product=firefox-latest&os=win64&
 if is_change != 0 : archive(path_public)
 
 print('#############################################')
-print('#{:^43}#'.format('Update End'))
+print('# Update End :{:^30}#'.format(str(datetime.datetime.now().strftime('%Y/%m/%d %H:%M'))))
 print('#############################################')
