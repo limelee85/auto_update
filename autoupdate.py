@@ -136,6 +136,8 @@ def update(name,url,select,version_file,sub_path) :
 		print('# {} occurs Error! : {}'.format(name,e))
 	except KeyError as e :
 		print('# {} occurs Error! : {}'.format(name,e))
+	except TypeError as e :
+		print('# {} occurs Error! : {}'.format(name,e))
 
 def archive(path) :
 
@@ -166,7 +168,7 @@ update('github_Apktool','https://api.github.com/repos/iBotPeaches/Apktool/releas
 update('github_jadx','https://api.github.com/repos/skylot/jadx/releases/latest','jadx-gui-[0-9.]+-with-jre-win','jadx_version','Mobile/')
 update('ADB', 'https://developer.android.com/tools/releases/platform-tools?hl=ko','h4','adb_version','Mobile/')
 update('3utools','https://url.3u.com/zmAJjyaa','Location','3utools_version','Mobile/')
-update('Bitvise SSH Client','https://www.bitvise.com/ssh-client-download','#content > div','bitvise_version','SSH/')
+update('Bitvise SSH Client','https://bitvise.com/ssh-client-download','#content > div','bitvise_version','SSH/')
 update('Putty','https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html','body > h1','putty_version','SSH/')
 update('github_DBeaver','https://api.github.com/repos/dbeaver/dbeaver/releases/latest','dbeaver-ce-[0-9.]+-x86_64-setup.exe','DBeaver_version','DB/')
 update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','DB/')
