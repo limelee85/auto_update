@@ -12,7 +12,7 @@ version_path = os.path.dirname(__file__)+'/data/'
 is_change = 0
 
 def check_str(string):
-	check_str = ['-r ', '-rf ', '-f ', '..', '../', '\.\.', '\..', '.\.' , '*', '/bin', '/boot', '/dev', '/etc', '/home', '/root', '/usr', '/sys', '/var', '"', '\\', ';', '\n', '\x00']
+	check_str = ['-r ', '-rf ', '-f ', '..', '../', '\\.\\.', '\\..', '.\\.' , '*', '/bin', '/boot', '/dev', '/etc', '/home', '/root', '/usr', '/sys', '/var', '"', '\\', ';', '\n', '\x00']
 	warn = [s for s in check_str if s in string]
 	if (len(warn) > 0) :
 		print('## Find Dangerous String [ {} ] : Skip Download/Remove File'.format(string))
