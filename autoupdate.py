@@ -6,15 +6,20 @@ import datetime
 import json
 import re
 import shutil
+from config import CONFIG
+import traceback
+import json
+import os
 
 path_public = os.getenv('PATH_PUBLIC')
 DEBUG = os.getenv("DEBUG", 'prod')
-version_path = os.path.dirname(__file__)+'/data/'
+version_file = os.path.dirname(__file__)+'/data/versions.json'
+prev_versions = {}
 is_change = 0
 
 def debug_print(*args, **kwargs):
-    if DEBUG == 'dev':
-        print("[DEBUG]", *args, **kwargs)
+	if DEBUG == 'dev':
+		print("[DEBUG]", *args, **kwargs)
 
 def check_str(string):
 	check_str = ['-r ', '-rf ', '-f ', '..', '../', '\\.\\.', '\\..', '.\\.' , '*', '/bin', '/boot', '/dev', '/etc', '/home', '/root', '/usr', '/sys', '/var', '"', '\\', ';', '\n', '\x00']
@@ -34,94 +39,96 @@ def file_path_delete(prev_version,sub_path):
 			print('## Not Fonud [ {} ] : Skip Remove File'.format(prev_version))
 		except IsADirectoryError :
 			print('## Not Found [ {} ] : Skip Remove File'.format(prev_version))
-		
 
-def prev_version_parse(path):
-	try:
-		vf = open(version_path+path,'r')
-		prev_version = vf.read().replace('\n', '')
-		vf.close()
-	except FileNotFoundError as e:
-		print('## Not Found [{}] : Create New File'.format(path))
-		vf = open(version_path+path,'x')
-		vf.close()
-		prev_version = ''
-	return prev_version
+def load_versions():
+	if not os.path.exists(version_file):
+		return {}
+	with open(version_file, "r", encoding="utf-8") as f:
+		return json.load(f)
 
-def lastest_version_write(path, version):
-	vf = open(version_path+path,'w')
-	vf.write(version)
-	vf.close()
+def save_versions():
+	with open(version_file, "w", encoding="utf-8") as f:
+		json.dump(prev_versions, f, indent=2, ensure_ascii=False)
 
-def parser(url, select) :
-	URL = url
-	v = requests.get(URL , allow_redirects=False)
-	if (select != 'Location') :
+
+def parser(cfg) :
+	v = requests.get(cfg["url"] , allow_redirects=False)
+	if (cfg["select"] != 'Location') :
 		result = bs(v.text, 'html.parser')
-		select_result = result.select(select)
-		debug_print('select=', select, 'result=', result.select(select))
-		return(result.select(select))
+		select_result = result.select(cfg["select"])[0]
+
+		debug_print('select_result=', select_result)
+		iter_path = cfg["iter_path"]
+		if isinstance(iter_path, list):
+			for key in iter_path:
+				if isinstance(select_result, dict):
+					select_result = select_result[key]
+				else:
+					select_result = select_result.get(key)
+		elif isinstance(iter_path, str):
+			if iter_path == "text":
+				select_result = select_result.text 
+			else :
+				select_result = str(select_result)
+
+		debug_print('select=', cfg["select"], 'result=', select_result)
 	else:
-		return(v.headers[select])
+		select_result = v.headers[cfg["select"]]
 
-def json_parse(url):
-	URL = url
-	v = requests.get(URL)
-	#print(v.text)
-	return(json.loads(v.text))
+	download_select = re.compile(cfg["result"]["download_regex"], re.DOTALL).search(select_result).groupdict()
+	filename_select = re.compile(cfg["result"]["filename_regex"], re.DOTALL).search(select_result).groupdict()
 
-def burp_update(url,select):
-	burp_parse = json_parse(url)
-	for j in burp_parse['ResultSet']['Results']:
-		for i in j['builds'] :
-			if (i['ProductId'] == select) : 
-				burp_version = i['Version']			
-				return ['https://portswigger-cdn.net/burp/releases/download?product={}&version={}&type=WindowsX64'.format(select,burp_version),'burpsuite_{}_windows-x64_v{}.exe'.format(select,'_'.join(burp_version.split('.')))]
+	debug_print(download_select, filename_select)
+	download = cfg["result"]["download"].format(**download_select)
+	filename = cfg["result"]["filename"].format(**filename_select)
 
-# github download 20230731
-def github_update(url,select):
-	git_parse = json_parse(url)
-	regex = re.compile(select)
-	for i in git_parse['assets']:
-		try :
-			regex.match(i['name']).start() 
-			return [i['browser_download_url'],i['name']]
-		except AttributeError :
-			continue
+	debug_print("[*] Parse Result : download url= ", download,", filename= ", filename)
+	return [download,filename]
 
-def update(name,url,select,version_file,sub_path) :
+def json_parse(cfg):
+	debug_print("=== JSON Load Start ===")
+	v = requests.get(cfg["url"])
+	data = json.loads(v.text)
+
+	target = data
+	for p in cfg["iter_path"]:
+		target = target[p]
+
+	debug_print("Find Lastest File Info", target)
+	regex = re.compile(cfg["select"])
+	for item in target:
+		if re.match(regex, item[cfg["ckey"]]):
+			values = {}
+			for f in cfg["result"]["fields"]:
+				if f == "VersionUnderscore":
+					values[f] = "_".join(item["Version"].split("."))
+				else:
+					values[f] = item.get(f, "")
+
+			download = cfg["result"]["download"].format(**values)
+			filename = cfg["result"]["filename"].format(**values)
+
+			debug_print("[*] JSON Parse Result : download url= ", download,", filename= ", filename)
+			return [download,filename]
+
+def update(name) :
 
 	try: 
-		if (name == 'Burp Suite Pro' or name == 'Burp Suite Community'):
-			temp_result = burp_update(url,select)
-			parse = temp_result[0]
-			version = temp_result[1]
-		elif (name == 'Bitvise SSH Client') :
-			parse = parser(url,select)[0]
-			parse = parse.find('a')['href']+'#'+parse.text.split(',')[0].split(':')[1].strip()
-			version = parse.split('/')[-1]
-		elif (name.find('github') != -1) :
-			temp_result = github_update(url,select)
-			parse = temp_result[0]
-			version = temp_result[1]
-		elif (name == 'PickPick') :
-			parse = parser(url,select)[0]['href']
-			version = parse.split('/')[-1]+'#'+parse.split('/')[-2]
-		elif (name == 'Putty') :
-			parse = parser(url,select)
-			version = 'putty.exe#'+re.sub(r'[^0-9\.]', '', parse[0].text)
-			parse = 'https://the.earth.li/~sgtatham/putty/'+re.sub(r'[^0-9\.]', '', parse[0].text)+'/w64/'+version
-		elif (name == 'ADB') :
-			version = 'platform-tools_r{}-windows.zip'.format(parser(url,select)[0].text.split(' ')[0])
-			parse = 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip'
-		elif (name == '3utools' or name == 'FireFox') :
-			parse = parser(url,select)
-			version = parse.split('/')[-1]
+		cfg = CONFIG[name]
+		debug_print("[*] Config Load :", cfg)
+
+		if (cfg and cfg['type'] == "json"):
+			parse, version = json_parse(cfg)
 		else :
-			parse = parser(url,select)[0]['href']
-			version = parse.split('/')[-1]
+			parse, version = parser(cfg)
+
 		
-		prev_version = prev_version_parse(version_file)
+		if name in prev_versions:
+			prev_version = prev_versions[name]
+		else:
+			prev_version = ""
+
+		debug_print("[*] Compare Version : ",prev_version," -> ", version)
 
 		if (version != prev_version) :
 			if (check_str(version.split('#')[0]) and check_str(parse)) :
@@ -129,25 +136,28 @@ def update(name,url,select,version_file,sub_path) :
 				is_change = 1
 				print('# {} Update {} to {}'.format(name,prev_version,version))
 				print('## Remove previous version')
-				file_path_delete(prev_version,sub_path)
+				file_path_delete(prev_version,cfg['savefolder'])
 				print('## Download lastest version : {}'.format(parse))
-				if not os.path.exists("{}{}".format(path_public,sub_path)):
-					os.makedirs("{}{}".format(path_public,sub_path))
-				os.system('wget -q -O "{}{}{}" "{}"'.format(path_public,sub_path,version.split('#')[0],parse))
-				lastest_version_write(version_file,version)
+				if not os.path.exists("{}{}".format(path_public,cfg['savefolder'])):
+					os.makedirs("{}{}".format(path_public,cfg['savefolder']))
+				os.system('wget -q -O "{}{}{}" "{}"'.format(path_public,cfg['savefolder'],version.split('#')[0],parse))
+				prev_versions[name] = version
+				save_versions()
 				print('## Complete!')
 		else :
 			print('# {} is latest version : Skip'.format(name))
 
 	except IndexError as e:
 		print('# {} occurs Error! : {}'.format(name,e))
+		debug_print(traceback.print_exc())
 	except KeyError as e :
 		print('# {} occurs Error! : {}'.format(name,e))
+		debug_print(traceback.print_exc())
 	except TypeError as e :
 		print('# {} occurs Error! : {}'.format(name,e))
+		debug_print(traceback.print_exc())
 
 def archive(path) :
-
 	print('# Archive Tools folder : There is an update history')
 	print('## Delete prev Tools Archive file')
 	for f in os.listdir(path+'/../'):
@@ -167,25 +177,27 @@ print('# Update Start :{:^28}#'.format(str(datetime.datetime.now().strftime('%Y/
 print('# DEBUG MODE : {}'.format("ON" if DEBUG == "dev" else "OFF"))
 print('#############################################')
 
-update('Burp Suite Pro','https://portswigger.net/burp/releases/data?pageSize=6','pro','burppro_version','Proxy/')
-update('Burp Suite Community','https://portswigger.net/burp/releases/data?pageSize=6','community','burpcom_version','Proxy/')
-update('WireShark','https://www.wireshark.org/download.html','#download-accordion > div:nth-child(1) > details > div > ul > li:nth-child(1) > a','wireshark_version','Network/')
-update('Nmap','https://nmap.org/download','b > a','nmap_version','Network/')
-update('github_sslscan','https://api.github.com/repos/rbsec/sslscan/releases/latest','sslscan-[0-9.]+.zip','sslscan_version','Network/')
-update('github_Apktool','https://api.github.com/repos/iBotPeaches/Apktool/releases/latest','apktool_[0-9.]+','apktool_version','Mobile/')
-update('github_jadx','https://api.github.com/repos/skylot/jadx/releases/latest','jadx-gui-[0-9.]+-with-jre-win','jadx_version','Mobile/')
-update('ADB', 'https://developer.android.com/tools/releases/platform-tools?hl=ko','h4','adb_version','Mobile/')
-update('3utools','https://url.3u.com/zmAJjyaa','Location','3utools_version','Mobile/')
-update('Bitvise SSH Client','https://bitvise.com/ssh-client-download','#content > div','bitvise_version','SSH/')
-update('Putty','https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html','body > h1','putty_version','SSH/')
-update('github_DBeaver','https://api.github.com/repos/dbeaver/dbeaver/releases/latest','dbeaver-ce-[0-9.]+-x86_64-setup.exe','DBeaver_version','DB/')
-update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','DB/')
-update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','Editor/')
-update('PickPick','https://picpick.net/download/kr/','#gatsby-focus-wrapper > div > div > div:nth-child(3) > div > p > a:nth-child(2)','pickpick_version','Editor/')
-update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p:nth-of-type(2) > a','python_version','Language/')
-update('github_OpenJDK_Temurin','https://api.github.com/repos/adoptium/temurin8-binaries/releases/latest','OpenJDK8U-jdk_x64_windows_hotspot_[0-z]+.msi','java_version','Language/')
-update('github_hashcat','https://api.github.com/repos/hashcat/hashcat/releases/latest','hashcat-[0-9.]+.7z','hashcat_version','Cracker/')
-update('FireFox','https://download.mozilla.org/?product=firefox-latest&os=win64&lang=ko','Location','FireFox_version','Browser/')
+prev_versions = load_versions()
+
+update('Burp Suite Pro')
+update('Burp Suite Community')
+update('WireShark')
+update('Nmap')
+update('sslscan')
+update('Apktool')
+update('jadx')
+update('ADB')
+update('3utools')
+update('Bitvise SSH Client')
+update('Putty')
+update('DBeaver')
+update('DB Browser')
+update('Sublime Text')
+update('PickPick')
+update('Python')
+update('OpenJDK_Temurin')
+update('hashcat')
+update('FireFox')
 
 if is_change != 0 : archive(path_public)
 
