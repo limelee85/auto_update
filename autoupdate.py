@@ -8,8 +8,13 @@ import re
 import shutil
 
 path_public = os.getenv('PATH_PUBLIC')
+DEBUG = os.getenv("DEBUG", 'prod')
 version_path = os.path.dirname(__file__)+'/data/'
 is_change = 0
+
+def debug_print(*args, **kwargs):
+    if DEBUG == 'dev':
+        print("[DEBUG]", *args, **kwargs)
 
 def check_str(string):
 	check_str = ['-r ', '-rf ', '-f ', '..', '../', '\\.\\.', '\\..', '.\\.' , '*', '/bin', '/boot', '/dev', '/etc', '/home', '/root', '/usr', '/sys', '/var', '"', '\\', ';', '\n', '\x00']
@@ -53,6 +58,8 @@ def parser(url, select) :
 	v = requests.get(URL , allow_redirects=False)
 	if (select != 'Location') :
 		result = bs(v.text, 'html.parser')
+		select_result = result.select(select)
+		debug_print('select=', select, 'result=', result.select(select))
 		return(result.select(select))
 	else:
 		return(v.headers[select])
@@ -157,6 +164,7 @@ def archive(path) :
 
 print('\n\n\n#############################################')
 print('# Update Start :{:^28}#'.format(str(datetime.datetime.now().strftime('%Y/%m/%d %H:%M'))))
+print('# DEBUG MODE : {}'.format("ON" if DEBUG == "dev" else "OFF"))
 print('#############################################')
 
 update('Burp Suite Pro','https://portswigger.net/burp/releases/data?pageSize=6','pro','burppro_version','Proxy/')
@@ -174,7 +182,7 @@ update('github_DBeaver','https://api.github.com/repos/dbeaver/dbeaver/releases/l
 update('DB Browser', 'https://sqlitebrowser.org/dl/','body > div > main > article > div > ul:nth-child(4) > li:nth-child(3) > a','dbbrowser_version','DB/')
 update('Sublime Text','https://www.sublimetext.com/download_thanks?target=win-x64','#direct-downloads > li:nth-child(1) > a:nth-child(1)','sublime_version','Editor/')
 update('PickPick','https://picpick.net/download/kr/','#gatsby-focus-wrapper > div > div > div:nth-child(3) > div > p > a:nth-child(2)','pickpick_version','Editor/')
-update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p > a','python_version','Language/')
+update('Python','https://www.python.org/downloads/','#touchnav-wrapper > header > div > div.header-banner > div > div.download-os-windows > p:nth-of-type(2) > a','python_version','Language/')
 update('github_OpenJDK_Temurin','https://api.github.com/repos/adoptium/temurin8-binaries/releases/latest','OpenJDK8U-jdk_x64_windows_hotspot_[0-z]+.msi','java_version','Language/')
 update('github_hashcat','https://api.github.com/repos/hashcat/hashcat/releases/latest','hashcat-[0-9.]+.7z','hashcat_version','Cracker/')
 update('FireFox','https://download.mozilla.org/?product=firefox-latest&os=win64&lang=ko','Location','FireFox_version','Browser/')
