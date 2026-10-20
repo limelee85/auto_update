@@ -1,33 +1,17 @@
 CONFIG = {
-    "Burp Suite Pro": {
+    "Burp Suite Desktop": {
         "type": "json",
         "url": "https://portswigger.net/burp/releases/data?pageSize=6",
-        "iter_path": ["ResultSet", "Results", 0, "builds"],
-        "select": "pro",
-        "ckey": "ProductId",
+        "iter_path": ["ResultSet", "Results"],
+        "select": "Professional",
+        "ckey": "title",
         "result": {
             "download": (
                 "https://portswigger-cdn.net/burp/releases/download"
-                "?product={ProductId}&version={Version}&type=WindowsX64"
+                "?product=desktop&version={version}&type=WindowsX64"
             ),
-            "filename": "burpsuite_{ProductId}_windows-x64_v{VersionUnderscore}.exe",
-            "fields": ["ProductId", "Version", "VersionUnderscore"]
-        },
-        "savefolder":"Proxy/"
-    },
-    "Burp Suite Community": {
-        "type": "json",
-        "url": "https://portswigger.net/burp/releases/data?pageSize=6",
-        "iter_path": ["ResultSet", "Results", 0, "builds"],
-        "select": "community",
-        "ckey": "ProductId",
-        "result": {
-            "download": (
-                "https://portswigger-cdn.net/burp/releases/download"
-                "?product={ProductId}&version={Version}&type=WindowsX64"
-            ),
-            "filename": "burpsuite_{ProductId}_windows-x64_v{VersionUnderscore}.exe",
-            "fields": ["ProductId", "Version", "VersionUnderscore"]
+            "filename": "burpsuite_desktop_windows-x64_v{version}.exe",
+            "fields": ["title", "version"]
         },
         "savefolder":"Proxy/"
     },

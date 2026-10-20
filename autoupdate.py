@@ -13,6 +13,7 @@ import os
 
 path_public = os.getenv('PATH_PUBLIC')
 DEBUG = os.getenv("DEBUG", 'prod')
+print(DEBUG)
 version_file = os.path.dirname(__file__)+'/data/versions.json'
 prev_versions = {}
 is_change = 0
@@ -52,38 +53,46 @@ def save_versions():
 
 
 def parser(cfg) :
-	v = requests.get(cfg["url"] , allow_redirects=False)
-	if (cfg["select"] != 'Location') :
-		result = bs(v.text, 'html.parser')
-		select_result = result.select(cfg["select"])[0]
+	try:
+		v = requests.get(cfg["url"] , allow_redirects=False, timeout=10)
 
-		debug_print('select_result=', select_result)
-		iter_path = cfg["iter_path"]
-		if isinstance(iter_path, list):
-			for key in iter_path:
-				if isinstance(select_result, dict):
-					select_result = select_result[key]
-				else:
-					select_result = select_result.get(key)
-		elif isinstance(iter_path, str):
-			if iter_path == "text":
-				select_result = select_result.text 
-			else :
-				select_result = str(select_result)
+		if (cfg["select"] != 'Location') :
+			result = bs(v.text, 'html.parser')
+			select_result = result.select(cfg["select"])[0]
 
-		debug_print('select=', cfg["select"], 'result=', select_result)
-	else:
-		select_result = v.headers[cfg["select"]]
+			debug_print('select_result=', select_result)
+			iter_path = cfg["iter_path"]
+			if isinstance(iter_path, list):
+				for key in iter_path:
+					if isinstance(select_result, dict):
+						select_result = select_result[key]
+					else:
+						select_result = select_result.get(key)
+			elif isinstance(iter_path, str):
+				if iter_path == "text":
+					select_result = select_result.text 
+				else :
+					select_result = str(select_result)
 
-	download_select = re.compile(cfg["result"]["download_regex"], re.DOTALL).search(select_result).groupdict()
-	filename_select = re.compile(cfg["result"]["filename_regex"], re.DOTALL).search(select_result).groupdict()
+			debug_print('select=', cfg["select"], 'result=', select_result)
+		else:
+			select_result = v.headers[cfg["select"]]
 
-	debug_print(download_select, filename_select)
-	download = cfg["result"]["download"].format(**download_select)
-	filename = cfg["result"]["filename"].format(**filename_select)
+		download_select = re.compile(cfg["result"]["download_regex"], re.DOTALL).search(select_result).groupdict()
+		filename_select = re.compile(cfg["result"]["filename_regex"], re.DOTALL).search(select_result).groupdict()
 
-	debug_print("[*] Parse Result : download url= ", download,", filename= ", filename)
-	return [download,filename]
+		debug_print(download_select, filename_select)
+		download = cfg["result"]["download"].format(**download_select)
+		filename = cfg["result"]["filename"].format(**filename_select)
+
+		debug_print("[*] Parse Result : download url= ", download,", filename= ", filename)
+		return [download,filename]
+	except requests.exceptions.Timeout as e :
+		debug_print("[*] Timeout Error : ", cfg["url"])
+		return [None,None]
+
+	except requests.exceptions.ConnectionError as e :
+		debug_print("[*] Connection Error : ", cfg["url"])
 
 def json_parse(cfg):
 	debug_print("=== JSON Load Start ===")
@@ -100,10 +109,7 @@ def json_parse(cfg):
 		if re.match(regex, item[cfg["ckey"]]):
 			values = {}
 			for f in cfg["result"]["fields"]:
-				if f == "VersionUnderscore":
-					values[f] = "_".join(item["Version"].split("."))
-				else:
-					values[f] = item.get(f, "")
+				values[f] = item.get(f, "")
 
 			download = cfg["result"]["download"].format(**values)
 			filename = cfg["result"]["filename"].format(**values)
@@ -156,6 +162,9 @@ def update(name) :
 	except TypeError as e :
 		print('# {} occurs Error! : {}'.format(name,e))
 		debug_print(traceback.print_exc())
+	except AttributeError as e :
+		print('# {} occurs Error! : {}'.format(name,e))
+		debug_print(traceback.print_exc())
 
 def archive(path) :
 	print('# Archive Tools folder : There is an update history')
@@ -179,8 +188,8 @@ print('#############################################')
 
 prev_versions = load_versions()
 
-update('Burp Suite Pro')
-update('Burp Suite Community')
+update('Burp Suite Desktop')
+#update('Burp Suite Community')
 update('WireShark')
 update('Nmap')
 update('sslscan')
